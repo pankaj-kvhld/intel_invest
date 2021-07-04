@@ -16,23 +16,30 @@ def _flotify(n: str) -> float:
 
 # Cell
 class Stock:
-    def __init__(self, symbol):
+    def __init__(self, symbol: str) -> None:
         self.symbol = symbol
-        self.url = f"http://www.marketwatch.com/investing/stock/{symbol}/financials"
+        self.url_financial = (
+            f"http://www.marketwatch.com/investing/stock/{symbol}/financials"
+        )
+        self.url_profile = (
+            f"http://www.marketwatch.com/investing/stock/{symbol}/profile"
+        )
+        self.soup_financial = self._get_soup(self.url_financial)
+        self.soup_profile = self._get_soup(self.url_profile)
 
-    def _get_soup(self) -> str:
-        return BeautifulSoup(urlopen(self.url).read(), features="html.parser")
+    def _get_soup(self, url: str) -> str:
+        return BeautifulSoup(urlopen(url).read(), features="html.parser")
 
     def get_price(self) -> float:
         """Fetchs the price of stock."""
-        txt = self._get_soup()
-        price = txt.find("bg-quote", {"class": "value"})
+        price = self.soup_financial.find("bg-quote", {"class": "value"})
         return _flotify(price.text)
 
     def get_esp(self) -> list:
         """Fetches earning per share or last 5 years."""
-        txt = self._get_soup()
-        titles = txt.findAll("td", {"class": "overflow__cell fixed--column"})
+        titles = self.soup_financial.findAll(
+            "td", {"class": "overflow__cell fixed--column"}
+        )
         esp_title = [t for t in titles if "EPS (Basic)" in t.text]
         if esp_title:
             esp_title = esp_title[0]
@@ -48,3 +55,29 @@ class Stock:
         Max stock price = 25 * 5 year average EPS.
         """
         return 25 * st.mean(self.get_esp())
+
+    def get_pe(self) -> float:
+        """Fetches price to earning ratio (current)."""
+        label_val = zip(
+            self.soup_profile.findAll("td", {"class": "table__cell w75"}),
+            self.soup_profile.findAll("td", {"class": "table__cell w25"}),
+        )
+        pe = [val.text for lab,val in label_val if "P/E Current" in lab.text]
+        return _flotify(pe[0])
+
+    def get_pbv(self) -> float:
+        """Fetches price to book value."""
+        label_val = zip(
+            self.soup_profile.findAll("td", {"class": "table__cell w75"}),
+            self.soup_profile.findAll("td", {"class": "table__cell w25"}),
+        )
+        pbv = [val.text for lab,val in label_val if "Price to Book Ratio" in lab.text]
+        return _flotify(pbv[0])
+
+    def will_ben_buy_2(self):
+        """Ben Graham's rule 2 is that P/E * P/BV < 22.5."""
+        return self.get_pe() * self.get_pbv() < 22.5
+
+    def will_ben_buy_1(self):
+        """Ben Graham's rule 1 is that P < 5 yr average of EPS."""
+        return self.get_price() < self.max_price()
