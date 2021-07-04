@@ -1,24 +1,29 @@
-# Project name here
-> Summary description here.
+# intel_invest
+> A package to obtain the relevant figures for a company and apply some rules of thumb precribed in the book Intelligent Investor, by Benjamin Graham.
 
 
 This file will become your README and also the index of your documentation.
 
 ## Install
 
-`pip install your_project_name`
+`pip install intel_invest`
 
 ## How to use
 
-Fill me in please! Don't forget code examples:
+To obtain Graham's opinion on `Abbott Laboratories` do the following:
 
 ```python
-1+1
+stock = Stock("ABT")
+```
+
+```python
+# to o
+stock.get_price()
 ```
 
 
 
 
-    2
+    117.2
 
 
